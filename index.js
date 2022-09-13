@@ -1,7 +1,7 @@
-const AWS = require('aws-sdk');
 const sharp = require('sharp');
+const { S3Client } = require('@aws-sdk/client-s3');
 
-const s3 = new AWS.S3();
+const s3 = new S3Client();
 
 exports.handler = async (event, context, callback) => {
   const Bucket = event.Records[0].s3.bucket.name;
@@ -12,7 +12,7 @@ exports.handler = async (event, context, callback) => {
   console.log('name', filename, 'ext', ext);
 
   try {
-    const s3Object = await s3.getObject({ Bucket, Key }).promise(); // 버퍼로 가져오기
+    const s3Object = await s3.getObject({ Bucket, Key }); // 버퍼로 가져오기
     console.log('original', s3Object.Body.length);
     const resizedImage = await sharp(s3Object.Body) // 리사이징
       .resize(200, 200, { fit: 'inside' })
@@ -22,7 +22,7 @@ exports.handler = async (event, context, callback) => {
       Bucket,
       Key: `thumb/${filename}`,
       Body: resizedImage,
-    }).promise();
+    });
     console.log('put', resizedImage.length);
     return callback(null, `thumb/${filename}`);
   } catch (error) {
