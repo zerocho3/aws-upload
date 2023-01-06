@@ -13,22 +13,13 @@ exports.handler = async (event, context, callback) => {
     const requiredFormat = ext === 'jpg' ? 'jpeg' : ext;
     console.log('name', filename, 'ext', ext);
 
-    const toBuffer = async function (stream) {
-        const list = []
-        const reader = stream.getReader()
-        while (true) {
-            const { value, done } = await reader.read()
-            if (value)
-                list.push(value)
-            if (done)
-                break
-        }
-        return Buffer.concat(list)
-    };
-
     try {
         const getObject = await s3.send(new GetObjectCommand({ Bucket, Key }));
-        const imageBuffer = await toBuffer(getObject.Body);
+        const buffers = [];
+        for await (const data of getObject.Body) {
+            buffers.push(data);
+        }
+        const imageBuffer = Buffer.concat(buffers);
         console.log('put', imageBuffer.length);
         const resizedImage = await sharp(imageBuffer)
             .resize(200, 200, { fit: 'inside' })
